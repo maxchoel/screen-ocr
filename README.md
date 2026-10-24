@@ -48,3 +48,7 @@ powershell -NoProfile -ExecutionPolicy Bypass -File .\build.ps1
 - 使用 Windows 10 自带 OCR，复杂排版、艺术字、低分辨率文字的准确率有限。
 - 识别语言取决于系统安装的 OCR 语言包；本工具优先使用简体中文。
 - 超大面积框选会限制放大倍数，以控制识别耗时。
+
+## 许可证
+
+MIT License，© 2026 maxchoel。详见 [LICENSE](LICENSE)。
