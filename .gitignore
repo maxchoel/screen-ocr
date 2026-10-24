@@ -7,6 +7,12 @@ build/IconGen.exe
 dist/*.exe
 test/*.exe
 
+# 大体积 Paddle 运行库与模型（获取方式见 vendor/paddle/README.md）
+vendor/paddle/native/
+vendor/paddle/inference/
+dist/*.dll
+dist/inference/
+
 # Windows 系统文件
 Thumbs.db
 desktop.ini

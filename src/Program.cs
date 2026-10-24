@@ -1,4 +1,5 @@
 using System;
+using System.IO;
 using System.Runtime.InteropServices;
 using System.Threading;
 using System.Windows.Forms;
@@ -23,6 +24,17 @@ namespace ScreenOcrTool
 
             Application.EnableVisualStyles();
             Application.SetCompatibleTextRenderingDefault(false);
+
+            // PaddleOCR 的模型路径按当前目录解析，先把工作目录固定到程序所在目录。
+            try
+            {
+                Directory.SetCurrentDirectory(AppDomain.CurrentDomain.BaseDirectory);
+            }
+            catch
+            {
+                // 目录不可切换时仍可尝试按绝对路径识别。
+            }
+
             Application.SetUnhandledExceptionMode(UnhandledExceptionMode.CatchException);
             Application.ThreadException += Application_ThreadException;
             AppDomain.CurrentDomain.UnhandledException += CurrentDomain_UnhandledException;

@@ -18,14 +18,16 @@ namespace ScreenOcrTool
     internal sealed class OcrService
     {
         private readonly OcrEngine _engine;
+        private readonly PaddleOcrEngine _paddle;
 
         public string DisplayLanguage { get; private set; }
         public string Warning { get; private set; }
         public bool IsChinese { get; private set; }
 
-        private OcrService(OcrEngine engine, string displayLanguage, bool isChinese, string warning)
+        private OcrService(OcrEngine engine, PaddleOcrEngine paddle, string displayLanguage, bool isChinese, string warning)
         {
             _engine = engine;
+            _paddle = paddle;
             DisplayLanguage = displayLanguage;
             IsChinese = isChinese;
             Warning = warning;
@@ -33,6 +35,25 @@ namespace ScreenOcrTool
 
         public static OcrService Create()
         {
+            // 只要程序目录里带齐了 PaddleOCR 运行库和模型，就优先使用高精度引擎。
+            PaddleOcrEngine paddle = null;
+            try
+            {
+                if (PaddleOcrEngine.IsAvailable())
+                {
+                    paddle = new PaddleOcrEngine();
+                }
+            }
+            catch (Exception)
+            {
+                paddle = null;
+            }
+
+            if (paddle != null)
+            {
+                return new OcrService(null, paddle, "PaddleOCR（PP-OCRv5 高精度）", true, null);
+            }
+
             IReadOnlyList<Language> languages;
             try
             {
@@ -110,7 +131,7 @@ namespace ScreenOcrTool
                 warning = "系统没有安装中文识别包，当前只能按 " + display + " 识别。";
             }
 
-            return new OcrService(engine, display, isChinese, warning);
+            return new OcrService(engine, null, display, isChinese, warning);
         }
 
         private static string SimplifyLanguageName(Language language)
@@ -136,6 +157,28 @@ namespace ScreenOcrTool
             if (source == null)
             {
                 return string.Empty;
+            }
+
+            if (_paddle != null)
+            {
+                try
+                {
+                    Bitmap input = source;
+                    List<string> paddleLines = await Task.Run(delegate
+                    {
+                        return _paddle.RecognizeLines(input);
+                    });
+                    return string.Join(Environment.NewLine, paddleLines.ToArray());
+                }
+                catch (Exception ex)
+                {
+                    if (_engine == null)
+                    {
+                        throw new InvalidOperationException(
+                            "高精度识别失败，请确认程序目录里的 PaddleOCR 运行库和 inference 模型完整。", ex);
+                    }
+                    // 高精度引擎临时出错时，继续用系统 OCR 兜底。
+                }
             }
 
             using (Bitmap prepared = PrepareImage(source))
@@ -349,7 +392,7 @@ namespace ScreenOcrTool
             }
         }
 
-        private static string CleanLine(string text)
+        internal static string CleanLine(string text)
         {
             if (string.IsNullOrEmpty(text))
             {

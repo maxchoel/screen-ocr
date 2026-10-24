@@ -79,6 +79,10 @@ namespace ScreenOcrTool
             {
                 SetStatus(warning, Theme.Danger);
             }
+            else if (_ocr.DisplayLanguage != null && _ocr.DisplayLanguage.StartsWith("PaddleOCR", StringComparison.Ordinal))
+            {
+                SetStatus("高精度识别引擎已就绪。点击按钮或按 " + _hotkeyText + " 开始框选。");
+            }
             else
             {
                 SetStatus("准备就绪。点击按钮或按 " + _hotkeyText + " 开始框选。");

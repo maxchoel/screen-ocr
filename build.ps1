@@ -9,6 +9,10 @@ $buildDir = Join-Path $root "build"
 $outDir = Join-Path $buildDir "out"
 $distDir = Join-Path $root "dist"
 $refDir = Join-Path $buildDir "ref"
+$vendorDir = Join-Path $root "vendor\paddle"
+$paddleLibDir = $vendorDir
+$paddleNativeDir = Join-Path $vendorDir "native"
+$paddleInferenceDir = Join-Path $vendorDir "inference"
 $sdkPackageVersion = "10.0.28000.1721"
 
 $frameworkDir = Join-Path $env:WINDIR "Microsoft.NET\Framework64\v4.0.30319"
@@ -63,7 +67,9 @@ $references = @(
     (Join-Path $frameworkDir "System.Runtime.WindowsRuntime.dll"),
     (Join-Path $refDir "Windows.WinMD"),
     (Join-Path $refDir "Windows.Foundation.FoundationContract.winmd"),
-    (Join-Path $refDir "Windows.Foundation.UniversalApiContract.winmd")
+    (Join-Path $refDir "Windows.Foundation.UniversalApiContract.winmd"),
+    (Join-Path $paddleLibDir "PaddleOCRSharp.dll"),
+    (Join-Path $paddleLibDir "Newtonsoft.Json.dll")
 )
 
 $cscArgs = @(
@@ -72,7 +78,7 @@ $cscArgs = @(
     "/codepage:65001",
     "/langversion:5",
     "/target:winexe",
-    "/platform:anycpu",
+    "/platform:x64",
     "/optimize+",
     "/debug-",
     "/warn:4",
@@ -92,6 +98,25 @@ if ($LASTEXITCODE -ne 0) {
 }
 
 Copy-Item $outExe $distExe -Force
+
+# 带上 PaddleOCR 高精度引擎：托管库、原生运行库和 PP-OCRv5 模型。
+if (-not (Test-Path (Join-Path $paddleNativeDir "PaddleOCR.dll"))) {
+    throw "缺少 PaddleOCR 运行库：$paddleNativeDir"
+}
+Copy-Item (Join-Path $paddleLibDir "PaddleOCRSharp.dll") $distDir -Force
+Copy-Item (Join-Path $paddleLibDir "Newtonsoft.Json.dll") $distDir -Force
+Get-ChildItem -LiteralPath $paddleNativeDir -File -Filter *.dll | ForEach-Object {
+    Copy-Item -LiteralPath $_.FullName -Destination $distDir -Force
+}
+
+$distInference = Join-Path $distDir "inference"
+if (Test-Path $distInference) {
+    Remove-Item $distInference -Recurse -Force
+}
+New-Item -ItemType Directory -Force -Path $distInference | Out-Null
+Copy-Item -Path (Join-Path $paddleInferenceDir "*") -Destination $distInference -Recurse -Force
+
 Write-Host ""
 Write-Host "编译完成：$distExe" -ForegroundColor Green
+Write-Host "高精度引擎：PaddleOCR PP-OCRv5 移动版（首次识别时加载，约 1-2 秒）" -ForegroundColor Green
 Get-Item $distExe | Select-Object FullName, Length, LastWriteTime
