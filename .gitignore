@@ -1,0 +1,17 @@
+# 编译产物（build.ps1 会重新生成）
+build/out/
+build/ref/
+build/IconGen.exe
+
+# Windows 系统文件
+Thumbs.db
+desktop.ini
+Desktop.ini
+
+# 编辑器临时文件
+~$*
+*.tmp
+*.bak
+
+# macOS
+.DS_Store
