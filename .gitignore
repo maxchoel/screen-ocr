@@ -3,6 +3,10 @@ build/out/
 build/ref/
 build/IconGen.exe
 
+# 可执行文件不进仓库（需要的人自行 build.ps1 编译，或从 Release 下载）
+dist/*.exe
+test/*.exe
+
 # Windows 系统文件
 Thumbs.db
 desktop.ini
